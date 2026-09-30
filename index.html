@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Dunia Dongeng - Game Benar atau Salah</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- MediaPipe Hands & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+        .bg-fairytale {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+        }
+        .card-magical {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(100, 80, 160, 0.15);
+        }
+        .text-glow {
+            text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+        }
+        .btn-fantasy {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-fantasy:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .btn-fantasy:active {
+            transform: translateY(1px) scale(0.98);
+        }
+        /* Custom video flip for intuitive webcam display */
+        .video-mirrored {
+            transform: scaleX(-1);
+        }
+        /* Pulse Animation */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.8); }
+        }
+        .pulse-magical {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-fairytale min-h-screen text-slate-800 relative flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Background Magical Canvas -->
+    <canvas id="bg-stars" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-10 p-4 max-w-6xl mx-auto w-full flex justify-between items-center">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="goToScreen('welcome')">
+            <div class="w-12 h-12 bg-white/90 rounded-2xl flex items-center justify-center text-2xl shadow-md text-purple-600">
+                🧚‍♀️️
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-purple-900 leading-tight font-heading">DUNIA DONGENG</h1>
+                <p class="text-xs text-purple-700 font-semibold">Bahasa Indonesia Kelas VII SMP</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-sound" onclick="toggleAudio()" class="bg-white/80 hover:bg-white text-purple-700 p-3 rounded-2xl shadow-sm text-sm font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-volume-high" id="sound-icon"></i>
+                <span class="hidden sm:inline">Suara</span>
+            </button>
+            <button onclick="showModal('modal-instructions')" class="bg-white/80 hover:bg-white text-purple-700 p-3 rounded-2xl shadow-sm text-sm font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-circle-question"></i>
+                <span class="hidden sm:inline">Petunjuk</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Dynamic Container -->
+    <main class="relative z-10 max-w-5xl mx-auto w-full px-4 py-2 flex-grow flex flex-col justify-center">
+
+        <!-- SCREEN 1: WELCOME SCREEN -->
+        <section id="screen-welcome" class="space-y-6 text-center my-auto">
+            <div class="card-magical rounded-3xl p-6 sm:p-10 max-w-2xl mx-auto pulse-magical">
+                <div class="flex justify-center gap-3 text-4xl sm:text-5xl mb-3">
+                    <span>🧚‍♀️</span><span>🏰</span><span>🐉</span><span>📖</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-purple-900 mb-2 font-heading">
+                    PETUALANGAN DUNIA DONGENG
+                </h2>
+                <div class="inline-block bg-purple-100 text-purple-800 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+                    ✨ Game Benar atau Salah Berbasis Kamera ✨
+                </div>
+                <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto mb-6">
+                    Uji pemahamanmu tentang ciri, jenis, unsur intrinsik, dan amanat dongeng dengan gerakan tangan di depan kamera!
+                </p>
+
+                <!-- Form Input Siswa -->
+                <div class="bg-purple-50/80 p-5 rounded-2xl text-left border border-purple-100 mb-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">Nama Siswa</label>
+                        <input type="text" id="input-nama" placeholder="Masukkan nama lengkapmu..." 
+                            class="w-full px-4 py-3 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white font-medium text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">Kelas</label>
+                        <select id="input-kelas" class="w-full px-4 py-3 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white font-medium text-slate-800">
+                            <option value="Kelas VII A">Kelas VII A</option>
+                            <option value="Kelas VII B">Kelas VII B</option>
+                            <option value="Kelas VII C">Kelas VII C</option>
+                            <option value="Kelas VII SMP">Kelas VII SMP</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button onclick="startGame()" class="btn-fantasy bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
+                        <i class="fa-solid fa-gamepad"></i> MULAI PETUALANGAN
+                    </button>
+                    <button onclick="goToScreen('study')" class="btn-fantasy bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-book-open"></i> PELAJARI MATERI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Privacy Disclaimer Note -->
+            <div class="text-xs text-purple-900/80 bg-white/60 backdrop-filter max-w-md mx-auto p-3 rounded-xl border border-white/60 flex items-center gap-2 justify-center">
+                <i class="fa-solid fa-shield-halved text-purple-600 text-base"></i>
+                <span><strong>Privasi Terjamin:</strong> Kamera hanya memproses gerakan tangan di browsermu secara lokal. Tidak ada video yang direkam atau disimpan.</span>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: STUDY MATERIAL SCREEN -->
+        <section id="screen-study" class="hidden space-y-6">
+            <div class="card-magical rounded-3xl p-6 sm:p-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-purple-100 pb-4">
+                    <div>
+                        <span class="text-xs font-bold text-purple-600 uppercase tracking-widest">Rangkuman Pembelajaran</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-purple-900 font-heading">📖 Modul Dongeng Kelas VII</h2>
+                    </div>
+                    <button onclick="goToScreen('welcome')" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold px-4 py-2 rounded-xl text-sm transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Menu
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                    <button onclick="switchTab('tab-1')" class="tab-btn bg-purple-600 text-white font-semibold py-2.5 px-3 rounded-xl text-sm transition" id="tab-btn-1">1. Pengertian & Ciri</button>
+                    <button onclick="switchTab('tab-2')" class="tab-btn bg-white/80 hover:bg-purple-100 text-purple-800 font-semibold py-2.5 px-3 rounded-xl text-sm transition" id="tab-btn-2">2. Jenis Dongeng</button>
+                    <button onclick="switchTab('tab-3')" class="tab-btn bg-white/80 hover:bg-purple-100 text-purple-800 font-semibold py-2.5 px-3 rounded-xl text-sm transition" id="tab-btn-3">3. Unsur Intrinsik</button>
+                    <button onclick="switchTab('tab-4')" class="tab-btn bg-white/80 hover:bg-purple-100 text-purple-800 font-semibold py-2.5 px-3 rounded-xl text-sm transition" id="tab-btn-4">4. Nilai & Amanat</button>
+                </div>
+
+                <!-- Tab Content Containers -->
+                <div id="tab-1" class="tab-content space-y-4 text-slate-700">
+                    <h3 class="text-lg font-bold text-purple-900">Apa itu Dongeng?</h3>
+                    <p class="text-sm leading-relaxed">Dongeng adalah cerita rakyat rekaan (fiksi) yang bersifat imajinatif dan tidak benar-benar terjadi di dunia nyata. Dongeng diwariskan secara turun-temurun dari generasi ke generasi.</p>
+                    <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 space-y-2 text-sm">
+                        <h4 class="font-bold text-purple-800">Ciri-Ciri Utama Dongeng:</h4>
+                        <ul class="list-disc list-inside space-y-1 text-slate-600">
+                            <li><strong>Khayalan/Imajinatif:</strong> Mengandung keajaiban dan hal di luar nalar.</li>
+                            <li><strong>Anonim:</strong> Nama pengarang aslinya umumnya tidak diketahui.</li>
+                            <li><strong>Disebarkan Lisan:</strong> Diceritakan dari mulut ke mulut secara tradisional.</li>
+                            <li><strong>Alur Sederhana:</strong> Memiliki jalan cerita yang mudah diikuti.</li>
+                            <li><strong>Pesan Moral:</strong> Mengandung pelajaran kebaikan bagi pembaca.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="tab-2" class="tab-content hidden space-y-4 text-slate-700">
+                    <h3 class="text-lg font-bold text-purple-900">Jenis-Jenis Dongeng</h3>
+                    <div class="grid sm:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200">
+                            <span class="font-bold text-amber-900 block">🐾 Fabel</span>
+                            Dongeng yang tokohnya adalah hewan yang bertingkah laku seperti manusia. (Contoh: <em>Kancil & Buaya</em>)
+                        </div>
+                        <div class="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200">
+                            <span class="font-bold text-emerald-900 block">🏔️ Legenda</span>
+                            Dongeng yang dikaitkan dengan asal-usul timbulnya suatu tempat atau benda alam. (Contoh: <em>Danau Toba</em>)
+                        </div>
+                        <div class="bg-blue-50 p-3.5 rounded-2xl border border-blue-200">
+                            <span class="font-bold text-blue-900 block">✨ Mite / Mitos</span>
+                            Dongeng tentang dewa-dewi, mahluk halus, atau hal gaib bertema keagamaan. (Contoh: <em>Nyi Roro Kidul</em>)
+                        </div>
+                        <div class="bg-rose-50 p-3.5 rounded-2xl border border-rose-200">
+                            <span class="font-bold text-rose-900 block">🛡️ Sage</span>
+                            Dongeng yang mengandung unsur sejarah dan keberanian/kepahlawanan. (Contoh: <em>Kisah Hang Tuah</em>)
+                        </div>
+                        <div class="bg-purple-50 p-3.5 rounded-2xl border border-purple-200 sm:col-span-2">
+                            <span class="font-bold text-purple-900 block">😂 Cerita Jenaka & Pelipur Lara</span>
+                            Cerita humor menggelitik (jenaka) atau cerita penghibur duka yang penuh keajaiban istana. (Contoh: <em>Pak Belalang</em>)
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-3" class="tab-content hidden space-y-4 text-slate-700">
+                    <h3 class="text-lg font-bold text-purple-900">Unsur-Unsur Intrinsik Dongeng</h3>
+                    <div class="grid sm:grid-cols-2 gap-3 text-sm">
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">1. Tema:</strong> Ide/Gagasan utama yang menjadi dasar pembuatan cerita.
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">2. Tokoh & Penokohan:</strong> Pelaku cerita dan watak/karakter kepribadiannya.
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">3. Latar (Setting):</strong> Waktu, tempat, dan suasana terjadinya peristiwa.
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">4. Alur (Plot):</strong> Rangkaian jalannya peristiwa dari awal hingga akhir.
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">5. Sudut Pandang:</strong> Cara penulis menempatkan diri dalam mengisahkan cerita (Orang I "Aku" / Orang III "Dia").
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <strong class="text-purple-700">6. Konflik:</strong> Masalah atau perselisihan yang dihadapi para tokoh.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-4" class="tab-content hidden space-y-4 text-slate-700">
+                    <h3 class="text-lg font-bold text-purple-900">Amanat & Nilai Moral</h3>
+                    <p class="text-sm">Amanat adalah pesan kebaikan yang ingin disampaikan oleh pembuat dongeng kepada pembaca agar dapat diterapkan dalam kehidupan sehari-hari.</p>
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 text-sm space-y-2">
+                        <h4 class="font-bold text-emerald-900">Contoh Nilai Moral:</h4>
+                        <p>• Kejujuran membawa keselamatan, sedangkan kebohongan merusak kepercayaan.</p>
+                        <p>• Kecerdikan hendaknya digunakan untuk menolong sesama, bukan untuk menipu orang lain.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: GAMEPLAY ARENA SCREEN -->
+        <section id="screen-game" class="hidden space-y-4">
+            <!-- Game Header Status Bar -->
+            <div class="card-magical rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span id="badge-level" class="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider">
+                        LEVEL 1
+                    </span>
+                    <span id="badge-question-num" class="text-sm font-bold text-purple-900">SOAL 1 / 15</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="flex-grow max-w-xs bg-purple-100 h-3 rounded-full overflow-hidden mx-2">
+                    <div id="game-progress-bar" class="bg-gradient-to-r from-purple-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 font-semibold">Skor:</span>
+                    <span id="game-score" class="text-xl font-bold text-emerald-600 font-heading">0</span>
+                </div>
+            </div>
+
+            <!-- Question Card & Camera Area Grid -->
+            <div class="grid lg:grid-cols-12 gap-4 items-start">
+
+                <!-- Question Column (7 Cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="card-magical rounded-3xl p-6 relative overflow-hidden min-h-[300px] flex flex-col justify-between">
+                        <!-- Background watermark icon -->
+                        <div class="absolute -right-6 -bottom-6 text-purple-100 text-9xl pointer-events-none select-none">📖</div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span id="question-category" class="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-100 px-3 py-1 rounded-lg">
+                                    Mengenal Dongeng
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="speakCurrentQuestion()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+                                        <i class="fa-solid fa-volume-high text-purple-600"></i> Baca Soal
+                                    </button>
+                                    <span class="text-xs text-slate-400 font-medium hidden sm:inline">Bahasa Indonesia SMP</span>
+                                </div>
+                            </div>
+
+                            <!-- Excerpt Callout (If any) -->
+                            <div id="question-excerpt" class="hidden mb-4 p-3.5 bg-amber-50/90 border-l-4 border-amber-400 text-amber-900 text-xs sm:text-sm rounded-r-xl italic leading-relaxed">
+                                "..."
+                            </div>
+
+                            <!-- Question Main Text -->
+                            <h3 id="question-text" class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed mb-4">
+                                Memuat pertanyaan...
+                            </h3>
+                        </div>
+
+                        <!-- Manual Choice Buttons (Fallback & Visual Target) -->
+                        <div class="pt-4 border-t border-purple-100 grid grid-cols-2 gap-3 z-10">
+                            <button id="btn-answer-true" onclick="submitAnswer(true)" class="btn-fantasy bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white p-3.5 rounded-2xl flex flex-col items-center justify-center border-2 border-emerald-400 shadow-sm transition">
+                                <span class="text-2xl mb-1">✋</span>
+                                <span class="font-bold text-sm">TANGAN KANAN</span>
+                                <span class="text-xs bg-emerald-700/40 px-2 py-0.5 rounded mt-1 font-semibold">BENAR</span>
+                            </button>
+
+                            <button id="btn-answer-false" onclick="submitAnswer(false)" class="btn-fantasy bg-rose-500 hover:bg-rose-600 active:scale-95 text-white p-3.5 rounded-2xl flex flex-col items-center justify-center border-2 border-rose-400 shadow-sm transition">
+                                <span class="text-2xl mb-1">🤚</span>
+                                <span class="font-bold text-sm">TANGAN KIRI</span>
+                                <span class="text-xs bg-rose-700/40 px-2 py-0.5 rounded mt-1 font-semibold">SALAH</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Detection View Column (5 Cols) -->
+                <div class="lg:col-span-5">
+                    <div class="card-magical rounded-3xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-camera text-purple-600"></i> Deteksi Kamera Real-Time
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleHandFlip()" title="Tukar Deteksi Tangan Kiri/Kanan" class="text-xs text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-1 rounded-lg font-semibold transition flex items-center gap-1">
+                                    <i class="fa-solid fa-right-left"></i> <span id="flip-btn-text">Tukar Kiri/Kanan</span>
+                                </button>
+                                <button onclick="restartCamera()" class="text-xs text-purple-600 hover:underline font-semibold">
+                                    <i class="fa-solid fa-rotate-right"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Video Feed Container -->
+                        <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video flex items-center justify-center border-2 border-purple-200 shadow-inner">
+                            <video id="webcam-feed" class="w-full h-full object-cover video-mirrored hidden" playsinline></video>
+                            <canvas id="canvas-overlay" class="absolute inset-0 w-full h-full object-cover video-mirrored z-10 pointer-events-none"></canvas>
+
+                            <!-- Placeholder when camera is off/loading -->
+                            <div id="camera-placeholder" class="text-center p-4 text-white z-0 space-y-2">
+                                <i class="fa-solid fa-video-slash text-3xl text-purple-300 animate-pulse"></i>
+                                <p id="camera-status-text" class="text-xs font-medium text-purple-200">Mengaktifkan kamera...</p>
+                                <button id="btn-enable-cam" onclick="initCamera()" class="mt-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 px-4 rounded-xl shadow transition hidden">
+                                    <i class="fa-solid fa-power-off mr-1"></i> Aktifkan Kamera
+                                </button>
+                            </div>
+
+                            <!-- Gesture Hold Meter Ring Overlay -->
+                            <div id="gesture-hold-overlay" class="absolute inset-0 bg-purple-900/40 backdrop-blur-xs flex flex-col items-center justify-center z-20 opacity-0 transition-opacity duration-200 pointer-events-none">
+                                <div class="relative w-16 h-16 flex items-center justify-center">
+                                    <svg class="w-full h-full transform -rotate-90">
+                                        <circle cx="32" cy="32" r="26" stroke="rgba(255,255,255,0.3)" stroke-width="6" fill="none" />
+                                        <circle id="hold-progress-circle" cx="32" cy="32" r="26" stroke="#10b981" stroke-width="6" fill="none" stroke-dasharray="163" stroke-dashoffset="163" stroke-linecap="round" class="transition-all duration-75" />
+                                    </svg>
+                                    <span id="hold-icon" class="absolute text-xl">✋</span>
+                                </div>
+                                <span id="hold-label-text" class="text-xs font-bold text-white mt-1 drop-shadow">Menebak...</span>
+                            </div>
+                        </div>
+
+                        <!-- Hand Status Badge -->
+                        <div id="status-detection-badge" class="bg-amber-100 text-amber-900 text-xs font-semibold p-2.5 rounded-xl text-center flex items-center justify-center gap-2 border border-amber-200">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+                            <span>🟡 Arahkan tangan ke kamera</span>
+                        </div>
+
+                        <!-- Guide Text -->
+                        <div class="text-[11px] text-slate-500 space-y-1 bg-purple-50/60 p-2.5 rounded-xl border border-purple-100">
+                            <p class="font-semibold text-purple-900">💡 Cara Menjawab dengan Tangan:</p>
+                            <p>✋ <strong>Tangan Kanan:</strong> BENAR</p>
+                            <p>🤚 <strong>Tangan Kiri:</strong> SALAH</p>
+                            <p class="text-[10px] text-slate-400 mt-1">*Tahan posisi tangan selama 0.8 detik hingga indikator penuh.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEEDBACK POPUP MODAL -->
+        <div id="modal-feedback" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="card-magical rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center space-y-4 animate-bounce-in shadow-2xl">
+                <div id="feedback-icon" class="text-6xl my-2">🎉</div>
+                <h3 id="feedback-title" class="text-2xl font-bold font-heading">BENAR!</h3>
+                
+                <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-left space-y-1">
+                    <span class="text-xs font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-regular fa-lightbulb text-amber-500"></i> MENGAPA?
+                    </span>
+                    <p id="feedback-explanation" class="text-sm text-slate-700 leading-relaxed font-medium">
+                        Penjelasan jawaban akan tampil di sini.
+                    </p>
+                </div>
+
+                <button onclick="nextQuestion()" class="btn-fantasy bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg w-full flex items-center justify-center gap-2">
+                    Lanjut ke Soal Berikutnya <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: RESULTS & REFLECTION SCREEN -->
+        <section id="screen-result" class="hidden space-y-6 my-auto">
+            <div class="card-magical rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto text-center space-y-6">
+                <div class="text-5xl">🎉 🏰 ✨</div>
+                <div>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-purple-900 font-heading">PETUALANGAN SELESAI!</h2>
+                    <p class="text-slate-600 text-sm mt-1">Kamu telah menyelesaikan penjelajahan di Dunia Dongeng.</p>
+                </div>
+
+                <!-- Profile & Score Summary Grid -->
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                        <span class="text-xs font-semibold text-purple-600 block">Identitas Siswa</span>
+                        <span id="result-user-nama" class="font-bold text-slate-800 text-sm sm:text-base block">Siswa</span>
+                        <span id="result-user-kelas" class="text-xs text-purple-800 font-medium">Kelas VII</span>
+                    </div>
+
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <span class="text-xs font-semibold text-emerald-600 block">Skor Akhir</span>
+                        <span id="result-score" class="text-3xl font-extrabold text-emerald-600 font-heading">0</span>
+                        <span id="result-category" class="text-xs font-bold text-emerald-800 block mt-0.5">Sangat Baik</span>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex flex-col justify-center">
+                        <div class="flex justify-around text-center">
+                            <div>
+                                <span class="text-xs font-semibold text-slate-500 block">Benar</span>
+                                <span id="result-correct" class="text-xl font-bold text-emerald-600">0</span>
+                            </div>
+                            <div class="border-r border-blue-200"></div>
+                            <div>
+                                <span class="text-xs font-semibold text-slate-500 block">Salah</span>
+                                <span id="result-incorrect" class="text-xl font-bold text-rose-500">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="result-message" class="text-sm font-medium text-purple-900 bg-purple-100/70 p-4 rounded-2xl italic border border-purple-200">
+                    "Hebat! Kamu sudah menjelajahi dunia dongeng. Teruslah membaca karena setiap cerita memiliki pesan dan nilai yang dapat kita pelajari."
+                </p>
+
+                <!-- Refleksi Siswa Section -->
+                <div class="bg-white p-5 rounded-2xl border border-purple-100 text-left space-y-4 shadow-sm">
+                    <h3 class="text-base font-bold text-purple-900 flex items-center gap-2">
+                        <span>🌱</span> REFLEKSIKU
+                    </h3>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">1. Materi apa yang paling kamu pahami setelah bermain?</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border cursor-pointer hover:bg-purple-50">
+                                <input type="checkbox" class="rounded text-purple-600 focus:ring-purple-500" value="Pengertian Dongeng">
+                                <span>Pengertian & Ciri Dongeng</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border cursor-pointer hover:bg-purple-50">
+                                <input type="checkbox" class="rounded text-purple-600 focus:ring-purple-500" value="Jenis-Jenis Dongeng">
+                                <span>Jenis-Jenis Dongeng</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border cursor-pointer hover:bg-purple-50">
+                                <input type="checkbox" class="rounded text-purple-600 focus:ring-purple-500" value="Unsur Intrinsik">
+                                <span>Unsur Intrinsik Dongeng</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border cursor-pointer hover:bg-purple-50">
+                                <input type="checkbox" class="rounded text-purple-600 focus:ring-purple-500" value="Amanat & Moral">
+                                <span>Amanat & Nilai Moral</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">2. Apa manfaat membaca dongeng bagi kehidupanmu?</label>
+                        <textarea id="reflection-text" rows="2" placeholder="Tuliskan pendapatmu di sini..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                    <button onclick="restartGame()" class="btn-fantasy bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Main Lagi
+                    </button>
+                    <button onclick="printSummary()" class="btn-fantasy bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-print"></i> Simpan Ringkasan (PDF)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- INSTRUCTION MODAL -->
+    <div id="modal-instructions" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="card-magical rounded-3xl p-6 max-w-lg w-full space-y-4">
+            <div class="flex justify-between items-center border-b border-purple-100 pb-3">
+                <h3 class="text-xl font-bold text-purple-900 font-heading flex items-center gap-2">
+                    ❓ PETUNJUK PERMAINAN
+                </h3>
+                <button onclick="hideModal('modal-instructions')" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-sm text-slate-700">
+                <div class="bg-purple-50 p-3.5 rounded-2xl border border-purple-100 space-y-2">
+                    <h4 class="font-bold text-purple-900">🎮 CARA MENJAWAB:</h4>
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">✋</span>
+                        <div>
+                            <strong class="text-emerald-700">ANGKAT TANGAN KANAN</strong> = BENAR
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🤚</span>
+                        <div>
+                            <strong class="text-rose-700">ANGKAT TANGAN KIRI</strong> = SALAH
+                        </div>
+                    </div>
+                </div>
+
+                <ul class="list-disc list-inside space-y-1.5 text-xs text-slate-600">
+                    <li>Kamera akan mendeteksi tangan secara otomatis.</li>
+                    <li>Tahan gerakan tangan selama 0.8 detik hingga meteran terisi penuh.</li>
+                    <li>Pastikan wajah dan tangan terlihat jelas oleh kamera.</li>
+                    <li>Jika kamera terkendala, kamu juga bisa menekan tombol BENAR/SALAH secara manual.</li>
+                </ul>
+
+                <div class="p-3 bg-blue-50 text-blue-900 text-xs rounded-xl border border-blue-100 flex items-start gap-2">
+                    <i class="fa-solid fa-shield-halved text-blue-600 text-base mt-0.5"></i>
+                    <span><strong>Jaminan Privasi:</strong> Kamera hanya digunakan untuk mendeteksi gerakan tangan real-time dan tidak merekam, menyimpan, atau mengirimkan video.</span>
+                </div>
+            </div>
+
+            <button onclick="hideModal('modal-instructions')" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-md transition">
+                Saya Mengerti
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative z-10 p-4 text-center text-xs text-purple-900/70 font-medium">
+        Media Pembelajaran Interaktif Bahasa Indonesia SMP Kelas VII • Materi Dongeng
+    </footer>
+
+    <script>
+        /* 
+         * ==========================================
+         * DATA SOAL MATERI DONGENG KELAS VII SMP
+         * ==========================================
+         */
+        const questions = [
+            // LEVEL 1 — MENGENAL DONGENG
+            {
+                level: "LEVEL 1 — MENGENAL DONGENG",
+                category: "Pengertian Dongeng",
+                excerpt: null,
+                question: "Dongeng merupakan cerita rakyat rekaan yang bersifat imajinatif dan seluruh peristiwanya tidak benar-benar terjadi di dunia nyata.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Dongeng bersifat imajinatif (khayalan) dan berfungsi untuk menghibur serta menyampaikan nilai moral."
+            },
+            {
+                level: "LEVEL 1 — MENGENAL DONGENG",
+                category: "Ciri-Ciri Dongeng",
+                excerpt: null,
+                question: "Salah satu ciri utama dongeng adalah disebarkan secara tertulis sejak awal diciptakan dan diketahui secara pasti siapa nama pengarang aslinya.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Dongeng umumnya bersifat anonim (tidak diketahui pengarangnya) dan diwariskan secara lisan dari mulut ke mulut."
+            },
+            {
+                level: "LEVEL 1 — MENGENAL DONGENG",
+                category: "Fungsi Dongeng",
+                excerpt: null,
+                question: "Selain sebagai hiburan, dongeng juga berfungsi mendidik pembaca melalui nilai-nilai moral yang terkandung di dalamnya.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Dongeng memiliki fungsi ganda yaitu menghibur (rekreatif) dan memberikan pelajaran kebaikan (edukatif)."
+            },
+
+            // LEVEL 2 — JENIS DONGENG
+            {
+                level: "LEVEL 2 — JENIS DONGENG",
+                category: "Dongeng Fabel",
+                excerpt: null,
+                question: "Dongeng 'Si Kancil dan Buaya' dikategorikan sebagai Fabel karena tokoh-tokoh utamanya berupa hewan yang bertingkah laku seperti manusia.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Fabel adalah jenis dongeng yang mengisahkan kehidupan hewan dengan akal dan sifat layaknya manusia."
+            },
+            {
+                level: "LEVEL 2 — JENIS DONGENG",
+                category: "Dongeng Legenda",
+                excerpt: null,
+                question: "Cerita rakyat 'Asal-Usul Danau Toba' tergolong Mite karena menceritakan kisah dewa-dewi dan mahluk gaib keagamaan.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Cerita 'Asal-Usul Danau Toba' termasuk Legenda, yaitu dongeng yang menceritakan asal-usul timbulnya suatu tempat atau alam."
+            },
+            {
+                level: "LEVEL 2 — JENIS DONGENG",
+                category: "Dongeng Sage",
+                excerpt: null,
+                question: "Sage merupakan jenis dongeng yang menceritakan tentang humor kebodohan tokoh yang menggelitik hati pembaca.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Sage adalah dongeng yang mengandung unsur sejarah dan keberanian/kepahlawanan. Cerita humor disebut Cerita Jenaka."
+            },
+
+            // LEVEL 3 — UNSUR INTRINSIK
+            {
+                level: "LEVEL 3 — UNSUR INTRINSIK",
+                category: "Unsur Intrinsik",
+                excerpt: null,
+                question: "Tema dalam dongeng adalah pesan atau nasihat kebaikan yang ingin disampaikan pengarang kepada pembaca.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Pesan kebaikan disebut Amanat. Tema adalah gagasan pokok atau ide utama yang menjadi dasar cerita."
+            },
+            {
+                level: "LEVEL 3 — UNSUR INTRINSIK",
+                category: "Latar Cerita",
+                excerpt: null,
+                question: "Latar dalam dongeng meliputi tiga komponen utama, yaitu latar tempat, latar waktu, dan latar suasana.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Latar menggambarkan di mana (tempat), kapan (waktu), dan bagaimana situasi (suasana) peristiwa terjadi."
+            },
+            {
+                level: "LEVEL 3 — UNSUR INTRINSIK",
+                category: "Sudut Pandang",
+                excerpt: null,
+                question: "Jika pengarang menggunakan kata ganti 'Aku' atau 'Saya' dalam menceritakan dongeng, maka sudut pandang yang digunakan adalah sudut pandang orang ketiga.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Penggunaan kata 'Aku' menandakan sudut pandang orang pertama (pengarang ikut dalam cerita)."
+            },
+            {
+                level: "LEVEL 3 — UNSUR INTRINSIK",
+                category: "Konflik Cerita",
+                excerpt: null,
+                question: "Konflik merupakan pertentangan atau permasalahan yang dialami tokoh dan menjadi pendorong jalannya alur cerita.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Konflik membuat cerita menjadi menarik dan mengarahkan cerita menuju klimaks serta penyelesaian."
+            },
+
+            // LEVEL 4 — MEMAHAMI ISI DONGENG
+            {
+                level: "LEVEL 4 — MEMAHAMI ISI DONGENG",
+                category: "Analisis Karakter Tokoh",
+                excerpt: "Di sebuah hutan belantara, Burung Hantu merasa terganggu oleh nyanyian Belalang. Burung Hantu dengan ramah memuji suara Belalang dan mengundangnya minum teh bersama. Tanpa curiga, Belalang mendekat dan langsung ditangkap oleh Burung Hantu.",
+                question: "Berdasarkan kutipan di atas, tokoh Burung Hantu memiliki sifat yang tulus dan ramah dalam membantu temannya.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Burung Hantu bersikap licik dan berpura-pura ramah hanya untuk menjebak dan menangkap Belalang."
+            },
+            {
+                level: "LEVEL 4 — MEMAHAMI ISI DONGENG",
+                category: "Analisis Latar",
+                excerpt: "Matahari mulai tenggelam di balik bukit. Suasana istana yang megah perlahan diselimuti kegelapan malam, hanya dipayungi sinar rembulan yang temaram.",
+                question: "Kutipan dongeng tersebut menggambarkan latar tempat di perbukitan dan latar waktu pada pagi hari.",
+                answer: false,
+                explanation: "Pernyataan SALAH. Latar tempat berada di istana dan latar waktu adalah malam hari (diindikasikan frasa tenggelamnya matahari & sinar rembulan)."
+            },
+            {
+                level: "LEVEL 4 — MEMAHAMI ISI DONGENG",
+                category: "Analisis Masalah",
+                excerpt: "Kancil melihat seekor buaya sedang berjemur di tepi sungai. Ia kemudian berpikir bagaimana caranya menyeberangi sungai yang dalam tanpa dimakan buaya.",
+                question: "Dalam kutipan tersebut, tokoh Kancil sedang menghadapi konflik atau masalah dalam perjalanannya.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Kancil menghadapi masalah berupa rintangan sungai deras dan ancaman buaya yang menghalangi perjalanannya."
+            },
+
+            // LEVEL 5 — MENEMUKAN AMANAT
+            {
+                level: "LEVEL 5 — MENEMUKAN AMANAT",
+                category: "Pesan Moral Dongeng",
+                excerpt: "Anak gembala sering berbohong berteriak ada serigala untuk menipu warga. Ketika serigala benar-benar datang memangsa dombanya, warga tidak ada yang percaya lagi padanya.",
+                question: "Amanat dari cerita tersebut adalah orang yang sering berbohong tidak akan dipercaya lagi meskipun ia berkata jujur.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Kebiasaan berbohong akan merusak kepercayaan orang lain kepada kita di masa mendatang."
+            },
+            {
+                level: "LEVEL 5 — MENEMUKAN AMANAT",
+                category: "Nilai Moral",
+                excerpt: "Tupai yang cerdik menggunakan akalnya untuk membagikan buah-buahan secara adil kepada seluruh penghuni hutan yang sedang kelaparan.",
+                question: "Nilai moral dari cerita tersebut adalah bahwa kecerdikan hendaknya dimanfaatkan untuk menolong sesama dan kebaikan bersama.",
+                answer: true,
+                explanation: "Pernyataan BENAR. Kemampuan dan kecerdikan yang dimiliki sangat terpuji jika digunakan untuk kepedulian sosial."
+            }
+        ];
+
+        // Game State Variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let correctAnswersCount = 0;
+        let incorrectAnswersCount = 0;
+        let userData = { name: "Siswa", classGroup: "Kelas VII" };
+        let soundEnabled = true;
+
+        // Camera Tracking State
+        let hands = null;
+        let camera = null;
+        let isCameraActive = false;
+        let holdTimer = null;
+        let holdStartTime = null;
+        const HOLD_DURATION = 800; // 0.8 seconds hold to trigger answer
+        let detectedHandType = null; // 'RIGHT' or 'LEFT'
+        let isProcessingAnswer = false;
+        let isHandInverted = false; // Toggle manual jika kamera membalikkan deteksi
+
+        function toggleHandFlip() {
+            isHandInverted = !isHandInverted;
+            const btnText = document.getElementById('flip-btn-text');
+            if (btnText) {
+                btnText.innerText = isHandInverted ? "Mode: Dibalik" : "Tukar Kiri/Kanan";
+            }
+        }
+
+        // Audio Effects Generator (Web Audio API - No external sound files needed)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Speech Synthesis (Text-to-Speech Suara Soal & Opsi Jawaban)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
+
+        function speakCurrentQuestion() {
+            if (!soundEnabled) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
+                const q = questions[currentQuestionIndex];
+                
+                let text = `Soal nomor ${currentQuestionIndex + 1}. `;
+                if (q.excerpt) {
+                    text += `Kutipan cerita: ${q.excerpt}. `;
+                }
+                text += `${q.question}. `;
+                text += `Pilihan jawaban: Angkat tangan kanan jika Benar, atau angkat tangan kiri jika Salah.`;
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.92; // Kecepatan bicara pas & nyaman untuk siswa SMP
+                utterance.pitch = 1.0;
+                
+                // Cari profil suara Bahasa Indonesia
+                const voices = window.speechSynthesis.getVoices();
+                const idVoice = voices.find(v => v.lang && (v.lang.startsWith('id') || v.lang.startsWith('in')));
+                if (idVoice) utterance.voice = idVoice;
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'incorrect') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    osc.frequency.exponentialRampToValueAtTime(146.83, audioCtx.currentTime + 0.2); // D3
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            if (!soundEnabled) stopSpeech();
+            document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        // Screen Navigation
+        function goToScreen(screenName) {
+            stopSpeech();
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-study').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+
+            document.getElementById(`screen-${screenName}`).classList.remove('hidden');
+
+            if (screenName !== 'game' && isCameraActive) {
+                stopCamera();
+            }
+        }
+
+        function showModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-purple-600', 'text-white');
+                el.classList.add('bg-white/80', 'text-purple-800');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const btnNum = tabId.split('-')[1];
+            const activeBtn = document.getElementById(`tab-btn-${btnNum}`);
+            activeBtn.classList.remove('bg-white/80', 'text-purple-800');
+            activeBtn.classList.add('bg-purple-600', 'text-white');
+        }
+
+        // Game Lifecycle
+        function startGame() {
+            const nameInput = document.getElementById('input-nama').value.trim();
+            const classInput = document.getElementById('input-kelas').value;
+
+            userData.name = nameInput || "Siswa Kelas VII";
+            userData.classGroup = classInput;
+
+            currentQuestionIndex = 0;
+            score = 0;
+            correctAnswersCount = 0;
+            incorrectAnswersCount = 0;
+
+            goToScreen('game');
+            loadQuestion();
+            initCamera();
+        }
+
+        function loadQuestion() {
+            isProcessingAnswer = false;
+            resetHoldMeter();
+
+            const q = questions[currentQuestionIndex];
+            
+            // Header stats update
+            document.getElementById('badge-level').innerText = q.level;
+            document.getElementById('badge-question-num').innerText = `SOAL ${currentQuestionIndex + 1} / ${questions.length}`;
+            document.getElementById('game-score').innerText = score;
+            
+            // Progress Bar
+            const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('game-progress-bar').style.width = `${progressPercent}%`;
+
+            // Question Card
+            document.getElementById('question-category').innerText = q.category;
+            document.getElementById('question-text').innerText = q.question;
+
+            const excerptEl = document.getElementById('question-excerpt');
+            if (q.excerpt) {
+                excerptEl.innerText = `"${q.excerpt}"`;
+                excerptEl.classList.remove('hidden');
+            } else {
+                excerptEl.classList.add('hidden');
+            }
+
+            // Putar suara pembacaan soal dan opsi otomatis
+            speakCurrentQuestion();
+        }
+
+        function submitAnswer(userChoice) {
+            if (isProcessingAnswer) return;
+            isProcessingAnswer = true;
+            stopSpeech();
+
+            const q = questions[currentQuestionIndex];
+            const isCorrect = (userChoice === q.answer);
+
+            if (isCorrect) {
+                score += Math.round(100 / questions.length);
+                correctAnswersCount++;
+                playSound('correct');
+            } else {
+                incorrectAnswersCount++;
+                playSound('incorrect');
+            }
+
+            // Show feedback popup
+            document.getElementById('feedback-icon').innerText = isCorrect ? '🎉' : '❌';
+            document.getElementById('feedback-title').innerText = isCorrect ? 'BENAR!' : 'BELUM TEPAT!';
+            document.getElementById('feedback-title').className = `text-2xl font-bold font-heading ${isCorrect ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('feedback-explanation').innerText = q.explanation;
+
+            showModal('modal-feedback');
+        }
+
+        function nextQuestion() {
+            hideModal('modal-feedback');
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            goToScreen('result');
+
+            document.getElementById('result-user-nama').innerText = userData.name;
+            document.getElementById('result-user-kelas').innerText = userData.classGroup;
+            document.getElementById('result-score').innerText = score;
+            document.getElementById('result-correct').innerText = correctAnswersCount;
+            document.getElementById('result-incorrect').innerText = incorrectAnswersCount;
+
+            // Determine category
+            let categoryText = "";
+            let messageText = "";
+
+            if (score >= 90) {
+                categoryText = "🌟 Sangat Baik";
+                messageText = "Luar biasa! Pemahamanmu tentang materi dongeng sangat mendalam dan sempurna!";
+            } else if (score >= 75) {
+                categoryText = "👏 Baik";
+                messageText = "Kerja bagus! Kamu sudah memahami konsep dan unsur-unsur dongeng dengan baik.";
+            } else if (score >= 60) {
+                categoryText = "🙂 Cukup";
+                messageText = "Hasil yang cukup baik! Teruslah membaca dan mempelajari jenis serta unsur dongeng.";
+            } else {
+                categoryText = "📚 Yuk, Pelajari Lagi!";
+                messageText = "Jangan berkecil hati! Yuk baca kembali rangkuman materi dongeng dan coba lagi.";
+            }
+
+            document.getElementById('result-category').innerText = categoryText;
+            document.getElementById('result-message').innerText = `"${messageText}"`;
+
+            // Trigger Confetti
+            if (typeof confetti === 'function' && score >= 60) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        function restartGame() {
+            goToScreen('welcome');
+        }
+
+        // MediaPipe Camera Detection Engine
+        function initCamera() {
+            const videoElement = document.getElementById('webcam-feed');
+            const canvasElement = document.getElementById('canvas-overlay');
+            const canvasCtx = canvasElement.getContext('2d');
+            const statusBadge = document.getElementById('status-detection-badge');
+            const placeholder = document.getElementById('camera-placeholder');
+
+            if (!window.Hands || !window.Camera) {
+                statusBadge.innerHTML = "⚠️ Library kamera belum siap. Silakan manfaatkan tombol BENAR/SALAH.";
+                document.getElementById('btn-enable-cam').classList.remove('hidden');
+                return;
+            }
+
+            statusBadge.innerHTML = "⏳ Memulai sensor kamera...";
+
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.6,
+                minTrackingConfidence: 0.6
+            });
+
+            hands.onResults((results) => {
+                // Clear Overlay
+                canvasCtx.save();
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const landmarks = results.multiHandLandmarks[0];
+                    const handedness = results.multiHandedness[0];
+
+                    // Draw Landmarks overlay
+                    if (window.drawConnectors && window.drawLandmarks) {
+                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#10b981', lineWidth: 3 });
+                        drawLandmarks(canvasCtx, landmarks, { color: '#ec4899', lineWidth: 1, radius: 3 });
+                    }
+
+                    // Pemetaan deteksi tangan fisik pengguna:
+                    // MediaPipe label 'Left' = Tangan KANAN fisik pengguna pada kamera depan
+                    // MediaPipe label 'Right' = Tangan KIRI fisik pengguna pada kamera depan
+                    let rawLabel = handedness.label; // 'Left' or 'Right'
+                    if (isHandInverted) {
+                        rawLabel = (rawLabel === 'Left') ? 'Right' : 'Left';
+                    }
+
+                    const physicalHand = (rawLabel === 'Left') ? 'RIGHT' : 'LEFT';
+                    
+                    if (physicalHand === 'RIGHT') {
+                        // User raised Right Hand -> BENAR
+                        handleDetectedGesture('RIGHT');
+                        statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> <strong class="text-emerald-700">Tangan Kanan Terdeteksi (BENAR)</strong>`;
+                        statusBadge.className = "bg-emerald-100 text-emerald-900 text-xs font-semibold p-2.5 rounded-xl text-center border border-emerald-200 flex items-center justify-center gap-2";
+                    } else if (physicalHand === 'LEFT') {
+                        // User raised Left Hand -> SALAH
+                        handleDetectedGesture('LEFT');
+                        statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> <strong class="text-rose-700">Tangan Kiri Terdeteksi (SALAH)</strong>`;
+                        statusBadge.className = "bg-rose-100 text-rose-900 text-xs font-semibold p-2.5 rounded-xl text-center border border-rose-200 flex items-center justify-center gap-2";
+                    }
+                } else {
+                    // No hand detected
+                    handleDetectedGesture(null);
+                    statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span> 🟡 Arahkan tangan ke kamera`;
+                    statusBadge.className = "bg-amber-100 text-amber-900 text-xs font-semibold p-2.5 rounded-xl text-center border border-amber-200 flex items-center justify-center gap-2";
+                }
+
+                canvasCtx.restore();
+            });
+
+            camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    if (isCameraActive) {
+                        await hands.send({ image: videoElement });
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+
+            camera.start().then(() => {
+                isCameraActive = true;
+                videoElement.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }).catch((err) => {
+                console.error("Camera access error:", err);
+                statusBadge.innerHTML = "⚠️ Kamera tidak diizinkan. Gunakan tombol BENAR/SALAH.";
+                document.getElementById('camera-status-text').innerText = "Izin kamera ditolak.";
+                document.getElementById('btn-enable-cam').classList.remove('hidden');
+            });
+        }
+
+        function handleDetectedGesture(gestureType) {
+            if (isProcessingAnswer) {
+                resetHoldMeter();
+                return;
+            }
+
+            if (!gestureType) {
+                resetHoldMeter();
+                return;
+            }
+
+            const now = Date.now();
+
+            if (detectedHandType !== gestureType) {
+                detectedHandType = gestureType;
+                holdStartTime = now;
+            }
+
+            const elapsed = now - holdStartTime;
+            const progress = Math.min(elapsed / HOLD_DURATION, 1.0);
+
+            updateHoldOverlay(gestureType, progress);
+
+            if (progress >= 1.0) {
+                const answerChoice = (gestureType === 'RIGHT'); // RIGHT = BENAR (true), LEFT = SALAH (false)
+                resetHoldMeter();
+                submitAnswer(answerChoice);
+            }
+        }
+
+        function updateHoldOverlay(gestureType, progress) {
+            const overlay = document.getElementById('gesture-hold-overlay');
+            const progressCircle = document.getElementById('hold-progress-circle');
+            const holdIcon = document.getElementById('hold-icon');
+            const holdLabel = document.getElementById('hold-label-text');
+
+            overlay.style.opacity = '1';
+            holdIcon.innerText = (gestureType === 'RIGHT') ? '✋' : '🤚';
+            holdLabel.innerText = (gestureType === 'RIGHT') ? 'Memilih BENAR...' : 'Memilih SALAH...';
+
+            const circumference = 163;
+            const offset = circumference - (progress * circumference);
+            progressCircle.style.strokeDashoffset = offset;
+            progressCircle.style.stroke = (gestureType === 'RIGHT') ? '#10b981' : '#f43f5e';
+        }
+
+        function resetHoldMeter() {
+            detectedHandType = null;
+            holdStartTime = null;
+            const overlay = document.getElementById('gesture-hold-overlay');
+            if (overlay) overlay.style.opacity = '0';
+        }
+
+        function stopCamera() {
+            isCameraActive = false;
+            if (camera) {
+                camera.stop();
+            }
+        }
+
+        function restartCamera() {
+            stopCamera();
+            initCamera();
+        }
+
+        // Print Summary / Export PDF
+        function printSummary() {
+            const reflectionCheckboxes = document.querySelectorAll('#screen-result input[type="checkbox"]:checked');
+            const selectedTopics = Array.from(reflectionCheckboxes).map(cb => cb.value).join(', ') || "Semua materi";
+            const reflectionNotes = document.getElementById('reflection-text').value || "Saya merasa lebih memahami tentang pesan moral dalam dongeng.";
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Laporan Hasil Game - ${userData.name}</title>
+                    <style>
+                        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px; color: #333; }
+                        h1 { color: #5b21b6; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+                        .badge { background: #f3e8ff; color: #6b21a8; padding: 4px 12px; border-radius: 12px; font-weight: bold; }
+                        .grid { display: flex; gap: 20px; margin: 20px 0; }
+                        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; }
+                        .score { font-size: 32px; color: #059669; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <h1>🧚 LAPORAN HASIL PETUALANGAN DUNIA DONGENG</h1>
+                    <p><strong>Nama Siswa:</strong> ${userData.name}</p>
+                    <p><strong>Kelas:</strong> ${userData.classGroup}</p>
+                    <p><strong>Tanggal:</strong> ${new Date().toLocaleDateString('id-ID')}</p>
+                    
+                    <div class="grid">
+                        <div class="card">
+                            <div>Skor Akhir</div>
+                            <div class="score">${score} / 100</div>
+                        </div>
+                        <div class="card">
+                            <div>Jawaban Benar</div>
+                            <div style="font-size:24px; font-weight:bold; color:#059669;">${correctAnswersCount} / 15</div>
+                        </div>
+                        <div class="card">
+                            <div>Jawaban Salah</div>
+                            <div style="font-size:24px; font-weight:bold; color:#e11d48;">${incorrectAnswersCount} / 15</div>
+                        </div>
+                    </div>
+
+                    <h3>🌱 Refleksi Pembelajaran Siswa</h3>
+                    <p><strong>Materi yang Dikuasai:</strong> ${selectedTopics}</p>
+                    <p><strong>Manfaat Membaca Dongeng:</strong></p>
+                    <blockquote style="background: #f8fafc; padding: 12px; border-left: 4px solid #6b21a8; margin: 0;">
+                        "${reflectionNotes}"
+                    </blockquote>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); }, 500);
+        }
+
+        // Background Star Particles Animation
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('bg-stars');
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const particles = Array.from({ length: 45 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 2 + 1,
+                alpha: Math.random(),
+                speed: Math.random() * 0.01 + 0.005
+            }));
+
+            function animateStars() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => {
+                    p.alpha += p.speed;
+                    if (p.alpha > 1 || p.alpha < 0) p.speed = -p.speed;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(p.alpha)})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animateStars);
+            }
+            animateStars();
+        });
+    </script>
+</body>
+</html>
